@@ -1,10 +1,11 @@
 {
   "mode": "live",
   "fixture": null,
-  "last_poll_at": "2026-10-31T14:16:28Z",
+  "first_poll_at": "2026-10-31T14:28:07Z",
+  "last_poll_at": "2026-10-31T14:28:07Z",
   "ok": true,
   "auth_expired": false,
-  "duration_s": 18.03,
+  "duration_s": 17.24,
   "endpoints": {
     "vehicleOrders": "ok",
     "order": "ok",
@@ -20,23 +21,23 @@
   "changes_this_poll": 0,
   "alertable_this_poll": 0,
   "noise_this_poll": 0,
-  "rung": 6,
+  "rung": 4,
   "next": [
     {
-      "rung": 7,
-      "name": "Purchase opens",
-      "field": "isPreparingPurchase / steps.titleAndReg.locked"
+      "rung": 5,
+      "name": "Build matched",
+      "field": "vehicleId / configurationStatus"
     },
     {
-      "rung": 8,
-      "name": "Delivery set",
-      "field": "delivery.status"
+      "rung": 6,
+      "name": "VIN assigned",
+      "field": "vin / fulfillmentSummaryStatus"
     }
   ],
   "session_created_at": "2026-10-31T14:07:47Z",
   "poll_interval_min": 240,
   "heartbeat": true,
   "full_vin": false,
-  "stage_since": "2026-10-30T14:53:27Z",
+  "stage_since": "2026-10-31T14:28:07Z",
   "next_scheduled": null
 }
