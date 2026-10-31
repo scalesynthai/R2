@@ -118,6 +118,7 @@ def public_snapshot(facts: dict, full_vin: bool = False) -> dict[str, Any]:
         "orderDate": facts.get("orderDate"),
         "configurationDate": facts.get("configurationDate"),
         "agreementSignedAt": facts.get("agreementSignedAt"),
+        "orderedAt": facts.get("orderedAt"),
         "windowText": facts.get("windowText"),
         "leaseStatus": facts.get("leaseStatus"),
         "vehicleId": mask_id(facts.get("vehicleId")),

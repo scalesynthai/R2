@@ -64,7 +64,7 @@ RULES: list[Rule] = [
          lambda f: None,
          lambda f: "invited" if (_truthy(f.get("invitedToSelfConfigure")) or _truthy(f.get("invitedToSelfConfirm"))) else "implied by order"),
     Rule(3, lambda f: _truthy(f.get("configurationStatus")),
-         lambda f: f.get("configurationDate") or f.get("agreementSignedAt"), lambda f: f.get("configurationStatus")),
+         lambda f: f.get("orderedAt") or f.get("agreementSignedAt") or f.get("configurationDate"), lambda f: f.get("configurationStatus")),
     Rule(4, lambda f: f.get("fulfillmentSummaryStatus") == "PENDING_FULFILLMENT",
          lambda f: None, lambda f: f.get("fulfillmentSummaryStatus")),
     Rule(5, lambda f: _truthy(f.get("vehicleId"))

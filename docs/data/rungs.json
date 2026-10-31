@@ -22,7 +22,7 @@
     "name": "Ordered",
     "field": "configurationStatus",
     "reached": true,
-    "reached_at": "2026-10-27T18:20:22.325Z",
+    "reached_at": "2026-10-12T00:07:36.189Z",
     "source": "backfill",
     "value": "SOFT_LOCKED"
   },

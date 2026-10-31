@@ -213,3 +213,17 @@ def test_rejected_fields_are_stripped_and_rest_kept():
     for keep in ("vehicleId", "configurationStatus", "invitedToSelfConfirm", "payments {", "options {"):
         assert keep in q
     assert q.count("{") == q.count("}")
+
+
+def test_ordered_at_uses_deposit_not_configuration_date():
+    order = {"orderDate": "2024-03-07T18:24:26.161Z", "configurationStatus": "SOFT_LOCKED",
+             "payments": [
+                 {"intent": "DEPOSIT", "status": "SUCCEEDED", "date": "2024-03-07T18:24:25.887Z"},
+                 {"intent": "DEPOSIT", "status": "SUCCEEDED", "date": "2026-10-12T00:07:36.189Z"}],
+             "items": [{"type": "VEHICLE", "configuration": {"configurationDate": "2026-10-27T18:20:22.325Z"}}]}
+    facts = build_facts({"order": order})
+    assert facts["orderedAt"] == "2026-10-12T00:07:36.189Z"
+    rungs, _ = update_rungs(None, facts, "2026-10-31T00:00:00Z", first_poll=True)
+    assert {r["rung"]: r for r in rungs}[3]["reached_at"] == "2026-10-12T00:07:36.189Z"
+    order["garageInitialAgreementSignedAt"] = "2026-10-12T00:07:34.990Z"
+    assert build_facts({"order": order})["orderedAt"] == "2026-10-12T00:07:34.990Z"
