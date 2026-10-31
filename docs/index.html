@@ -228,7 +228,7 @@
   const RUNG_TEXT = {
     1: { done: (r) => `Placed ${fmtD(r.reached_at)}`, todo: () => "" },
     2: { done: (r) => r.reached_at ? `Invited ${fmtD(r.reached_at)}` : "Complete", todo: () => "Rivian invites you to place your order when your slot comes up" },
-    3: { done: (r, l) => `Build locked${r.reached_at ? ` on ${fmtD(r.reached_at)}` : ""}${l.configurationStatus ? ` (${human(l.configurationStatus).toLowerCase()})` : ""}`, todo: () => "You lock your build and sign the agreement on rivian.com" },
+    3: { done: (r, l) => `Order placed${r.reached_at ? ` on ${fmtD(r.reached_at)}` : ""}${l.configurationStatus ? ` (${human(l.configurationStatus).toLowerCase()})` : ""}`, todo: () => "You lock your build and sign the agreement on rivian.com" },
     4: { done: (r, l) => `Waiting for Rivian to match a build. Status: ${human(l.fulfillmentSummaryStatus)}`, todo: () => "After you place your order" },
     5: { done: (r) => `A vehicle has been assigned to your order${r.reached_at ? ` (${fmtD(r.reached_at)})` : ""}`, todo: () => "Your configuration hard-locks and a vehicle ID appears" },
     6: { done: (r, l) => `VIN ${l.vin || "assigned"}${r.reached_at ? ` · ${fmtD(r.reached_at)}` : ""}`, todo: () => "Usually close to the vehicle shipping" },
@@ -361,6 +361,7 @@
       meta: `${c.path}: ${mono(c.old)} → ${mono(c.new)}`, raw: true,
     }));
     if (meta.first_poll_at) events.push({ when: meta.first_poll_at, text: "Started watching this order", meta: `${meta.fields_watched || "?"} fields on every poll` });
+    if (latest.orderedAt) events.push({ when: latest.orderedAt, text: "You placed your order", meta: "" });
     if (latest.configurationDate || latest.agreementSignedAt) events.push({ when: latest.configurationDate || latest.agreementSignedAt, text: "You locked your configuration", meta: human(latest.configurationStatus) });
     if (latest.orderDate) events.push({ when: latest.orderDate, text: "Preorder placed", meta: "" });
     events.sort((a, b) => new Date(b.when) - new Date(a.when));

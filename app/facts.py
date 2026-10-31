@@ -49,6 +49,21 @@ def _vehicle_item(order: dict | None) -> dict | None:
     return None
 
 
+def _ordered_at(order: dict) -> str | None:
+    """When the order was actually placed. orderDate is the reservation, and configurationDate moves
+    every time the build is edited, so use the signed agreement, else the first deposit after the
+    reservation day."""
+    if order.get("garageInitialAgreementSignedAt"):
+        return order["garageInitialAgreementSignedAt"]
+    reserved = str(order.get("orderDate") or "")[:10]
+    later = sorted(
+        p["date"] for p in order.get("payments") or []
+        if isinstance(p, dict) and p.get("intent") == "DEPOSIT" and p.get("status") == "SUCCEEDED"
+        and p.get("date") and reserved and str(p["date"])[:10] > reserved
+    )
+    return later[0] if later else None
+
+
 def build_facts(raw: dict[str, Any]) -> dict[str, Any]:
     order: dict = raw.get("order") or {}
     vo_list: list = raw.get("vehicleOrders") or []
@@ -104,6 +119,7 @@ def build_facts(raw: dict[str, Any]) -> dict[str, Any]:
         "orderDate": order.get("orderDate") or vo.get("orderDate"),
         "configurationDate": cfg.get("configurationDate"),
         "agreementSignedAt": order.get("garageInitialAgreementSignedAt"),
+        "orderedAt": _ordered_at(order),
         "windowText": order.get("garageEstimatedInvitedToSelfConfigureDate"),
         "leaseStatus": order.get("garageLeaseStatus"),
         "vehicleId": order.get("vehicleId") or _g(order, "vehicle", "vehicleId"),
