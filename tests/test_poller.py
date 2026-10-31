@@ -127,3 +127,39 @@ def test_stage_since_and_next_scheduled(repo):
     poller.run(mock=True, fixture="order.build_matched", notify=False)
     meta = _read(root, "meta.json")
     assert meta["next_scheduled"] == {"label": "Planned build", "date": "2026-12-08", "field": "plannedBuildDate"}
+
+
+def test_transaction_status_falls_back_to_order(repo, monkeypatch):
+    """When t2d 503s and the gateway rejects the document, the poll derives the step data from the
+    order instead of marking transactionStatus as failed."""
+    root, poller = repo
+    from app import state
+    from app.rivian import RivianError
+
+    fx = state.load_fixture("order.build_matched")
+
+    class FakeClient:
+        def __init__(self, *_a, **_k):
+            pass
+
+        def vehicle_orders(self):
+            return fx["vehicleOrders"]
+
+        def order(self, _id):
+            return fx["order"], None
+
+        def transaction_status(self, _id):
+            raise RivianError("transactionStatus: HTTP 503; transactionStatus: Error in GraphQL validation")
+
+        def delivery(self, _id):
+            return fx["delivery"]
+
+        def user_info(self):
+            return fx["userInfo"]
+
+    monkeypatch.setattr(poller.crypto, "read_enc", lambda _p: {"user_session_token": "x"})
+    monkeypatch.setattr(poller, "RivianClient", FakeClient)
+    raw, errors = poller.fetch_live(None)
+    assert raw["transactionStatus"]
+    assert "transactionStatus" not in errors
+    assert "derived from order.consumerStatuses" in errors["transactionStatus.note"]
