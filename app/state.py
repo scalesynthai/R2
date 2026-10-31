@@ -71,15 +71,15 @@ def load_fixture(name: str) -> dict[str, Any]:
     raw: dict[str, Any] = {
         "order": order,
         "vehicleOrders": [fx["vehicleOrders_derived"]] if fx.get("vehicleOrders_derived") else [],
-        "transactionStatus": fx.get("transactionStatus") or _tx_from_order(order),
+        "transactionStatus": fx.get("transactionStatus") or tx_from_order(order),
         "delivery": (fx.get("deliveryData") or {}).get("delivery") if "deliveryData" in fx else fx.get("delivery"),
         "userInfo": fx.get("userInfo") or {"vehicles": []},
     }
     return raw
 
 
-def _tx_from_order(order: dict) -> dict:
-    """Synthesize the t2d transactionStatus shape from an order's consumerStatuses (fixtures only)."""
+def tx_from_order(order: dict) -> dict:
+    """Synthesize the t2d transactionStatus shape from an order's consumerStatuses (fixtures, and live when the t2d endpoint is down)."""
     cs = order.get("consumerStatuses") or {}
     out = {}
     for name, flags in (cs.get("steps") or {}).items():

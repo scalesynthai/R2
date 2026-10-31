@@ -66,6 +66,12 @@ def fetch_live(order_id_override: str | None) -> tuple[dict[str, Any], dict[str,
         except RivianAuthError:
             raise
         except (RivianError, KeyError, TypeError) as e:
+            if name == "transactionStatus" and isinstance(raw.get("order"), dict) and raw["order"].get("consumerStatuses"):
+                # t2d returns 503 and the gateway rejects the document; the order's consumerStatuses
+                # carry the same step flags, so derive the shape instead of reporting the poll degraded.
+                raw[name] = state.tx_from_order(raw["order"])
+                errors[f"{name}.note"] = f"endpoint unavailable ({e}); derived from order.consumerStatuses"
+                continue
             errors[name] = str(e)
             raw[name] = None
     if isinstance(raw.get("order"), dict) and "id" not in raw["order"]:
