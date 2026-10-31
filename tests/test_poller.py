@@ -50,7 +50,7 @@ def test_2_build_matched_advances_and_alerts(repo, monkeypatch):
     sent = []
     monkeypatch.setattr(poller, "send", lambda headline, body, priority="default", tags="": sent.append((headline, body, priority)) or True)
     assert poller.run(mock=True, fixture="order.pending_fulfillment", notify=True) == 0
-    assert len(sent) == 1 and sent[0][0] == "Checked, no change" and sent[0][2] == "low"
+    assert len(sent) == 1 and sent[0][0] == "Checked, no change" and sent[0][2] == "default"
     sent.clear()
     assert poller.run(mock=True, fixture="order.build_matched", notify=True) == 0
     assert _read(root, "meta.json")["rung"] == 5
@@ -179,3 +179,37 @@ def test_hours_since(repo):
     _, poller = repo
     assert poller._hours_since(None, "2026-10-31T10:00:00Z") == float("inf")
     assert poller._hours_since("2026-10-31T00:00:00Z", "2026-10-31T10:00:00Z") == 10
+
+
+def test_notify_retries_once_then_delivers(monkeypatch):
+    import requests
+    from app import notify
+
+    calls = []
+
+    class R:
+        def raise_for_status(self):
+            if len(calls) == 1:
+                raise requests.ConnectionError("blip")
+
+    monkeypatch.setenv("NTFY_TOPIC", "t")
+    monkeypatch.delenv("APPRISE_URL", raising=False)
+    monkeypatch.setattr(notify.time, "sleep", lambda s: None)
+    monkeypatch.setattr(notify.requests, "post", lambda *a, **k: calls.append(1) or R())
+    assert notify.send("h", "b") is True
+    assert len(calls) == 2
+
+
+def test_notify_reports_failure(monkeypatch):
+    import requests
+    from app import notify
+
+    monkeypatch.setenv("NTFY_TOPIC", "t")
+    monkeypatch.delenv("APPRISE_URL", raising=False)
+    monkeypatch.setattr(notify.time, "sleep", lambda s: None)
+
+    def boom(*a, **k):
+        raise requests.ConnectionError("down")
+
+    monkeypatch.setattr(notify.requests, "post", boom)
+    assert notify.send("h", "b") is False

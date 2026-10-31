@@ -107,6 +107,8 @@ def run(mock: bool, fixture: str, notify: bool = True) -> int:
         return 2
     except Exception as e:  # noqa: BLE001
         log.exception("poll failed")
+        if notify:
+            send("Poll failed", f"{type(e).__name__}: {e}", priority="high", tags="warning")
         meta = dict(meta_prev, last_poll_at=now, ok=False, errors={"poll": str(e)}, first_poll_at=first_poll_at)
         state.write_json(state.META, meta)
         return 1
@@ -187,7 +189,7 @@ def run(mock: bool, fixture: str, notify: bool = True) -> int:
             parts.append(f"{meta['fields_watched']} fields compared, no change")
             if errors and any(not k.endswith(".note") for k in errors):
                 parts.append("one Rivian service did not answer")
-            send("Checked, no change", f"{when}\n" + " · ".join(parts), priority="low", tags="white_check_mark")
+            send("Checked, no change", f"{when}\n" + " · ".join(parts), tags="white_check_mark")
     return 0
 
 
