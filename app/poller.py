@@ -28,6 +28,7 @@ from .sanitize import assert_clean, public_changes, public_snapshot
 
 log = logging.getLogger("r2wr")
 
+CHECKIN_EVERY_H = 22  # hours between "Checked, no change" pushes
 ENDPOINTS = ["vehicleOrders", "order", "transactionStatus", "delivery", "userInfo"]
 
 
@@ -129,6 +130,10 @@ def run(mock: bool, fixture: str, notify: bool = True) -> int:
     log_prev = state.read_json(state.CHANGES, []) or []
     change_log = (pub_changes + log_prev)[: state.MAX_CHANGES]
 
+    # With hourly polling, the quiet "checked, no change" push goes out once a day, not every poll.
+    checkin_due = bool(cfg.get("heartbeat", True)) and _hours_since(meta_prev.get("last_checkin_at"), now) >= CHECKIN_EVERY_H
+    will_checkin = checkin_due and not (pub_changes or newly)
+
     meta = {
         "mode": "mock" if mock else "live",
         "fixture": fixture if mock else None,
@@ -146,8 +151,9 @@ def run(mock: bool, fixture: str, notify: bool = True) -> int:
         "rung": rung_now,
         "next": [{"rung": r["rung"], "name": r["name"], "field": r["field"]} for r in next_signals(rungs)],
         "session_created_at": _session_age(),
-        "poll_interval_min": int(os.environ.get("POLL_INTERVAL_MIN", "240")),
+        "poll_interval_min": int(os.environ.get("POLL_INTERVAL_MIN", "60")),
         "heartbeat": bool(cfg.get("heartbeat", True)),
+        "last_checkin_at": now if will_checkin else meta_prev.get("last_checkin_at"),
         "full_vin": bool(cfg.get("full_vin")),
         "stage_since": _stage_since(rungs),
         "next_scheduled": _next_scheduled(facts),
@@ -171,7 +177,7 @@ def run(mock: bool, fixture: str, notify: bool = True) -> int:
         if pub_changes or newly:
             headline, body, priority = format_changes(pub_changes, rung_now, newly, RUNG_NAMES)
             send(headline, f"{when}\n{body}", priority=priority, tags="truck" if newly else "")
-        elif cfg.get("heartbeat", True):
+        elif will_checkin:
             stage = RUNG_NAMES.get(rung_now, "?")
             since = meta["stage_since"]
             days = _days_between(since, now) if since else None
@@ -183,6 +189,19 @@ def run(mock: bool, fixture: str, notify: bool = True) -> int:
                 parts.append("one Rivian service did not answer")
             send("Checked, no change", f"{when}\n" + " · ".join(parts), priority="low", tags="white_check_mark")
     return 0
+
+
+def _hours_since(iso: str | None, now_iso: str) -> float:
+    from datetime import datetime
+
+    if not iso:
+        return float("inf")
+    try:
+        a = datetime.fromisoformat(str(iso).replace("Z", "+00:00"))
+        b = datetime.fromisoformat(str(now_iso).replace("Z", "+00:00"))
+        return (b - a).total_seconds() / 3600
+    except ValueError:
+        return float("inf")
 
 
 def _local_time(iso: str) -> str:

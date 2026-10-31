@@ -82,7 +82,7 @@ def test_6_noise_path_is_stored_not_alerted(repo, monkeypatch):
     poller.run(mock=True, fixture="noisy", notify=True)
     meta = _read(root, "meta.json")
     assert meta["changes_this_poll"] == 1 and meta["noise_this_poll"] == 1 and meta["alertable_this_poll"] == 0
-    assert [a[0] for a in sent] == ["Checked, no change", "Checked, no change"]
+    assert [a[0] for a in sent] == ["Checked, no change"]  # check-ins are daily, so the second poll stays quiet
 
 
 def test_4_auth_expired_path(repo, monkeypatch):
@@ -163,3 +163,19 @@ def test_transaction_status_falls_back_to_order(repo, monkeypatch):
     assert raw["transactionStatus"]
     assert "transactionStatus" not in errors
     assert "derived from order.consumerStatuses" in errors["transactionStatus.note"]
+
+
+def test_checkin_is_daily_not_every_poll(repo, monkeypatch):
+    root, poller = repo
+    sent = []
+    monkeypatch.setattr(poller, "send", lambda headline, *a, **k: sent.append(headline))
+    for _ in range(3):
+        poller.run(mock=True, fixture="order.pending_fulfillment")
+    assert sent.count("Checked, no change") == 1
+    assert _read(root, "meta.json")["last_checkin_at"]
+
+
+def test_hours_since(repo):
+    _, poller = repo
+    assert poller._hours_since(None, "2026-10-31T10:00:00Z") == float("inf")
+    assert poller._hours_since("2026-10-31T00:00:00Z", "2026-10-31T10:00:00Z") == 10
