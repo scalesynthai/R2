@@ -2,10 +2,10 @@
   "mode": "live",
   "fixture": null,
   "first_poll_at": "2026-10-31T14:28:07Z",
-  "last_poll_at": "2026-10-31T14:34:57Z",
+  "last_poll_at": "2026-10-31T19:13:40Z",
   "ok": true,
   "auth_expired": false,
-  "duration_s": 18.02,
+  "duration_s": 17.7,
   "endpoints": {
     "vehicleOrders": "ok",
     "order": "ok",
@@ -35,8 +35,9 @@
     }
   ],
   "session_created_at": "2026-10-31T14:07:47Z",
-  "poll_interval_min": 240,
+  "poll_interval_min": 60,
   "heartbeat": true,
+  "last_checkin_at": "2026-10-31T19:13:40Z",
   "full_vin": false,
   "stage_since": "2026-10-31T14:28:07Z",
   "next_scheduled": null
